@@ -1,0 +1,24 @@
+#!/usr/bin/env mkb
+# Builder mkb file for the s3eWwise extension on android
+platform LINUX
+
+buildtype (SCONS, ARM)
+
+define S3E_ANDROID
+
+options
+{
+    dll
+    output-name="lib/android/libs3eWwise.so"
+    output-name-debug="lib/android/libs3eWwise_d.so"
+}
+define S3E_BUILD_EXT
+define AK_OPTIMIZED
+
+librarypath "Wwise/Wwise_v2014.1.1_build_5179/SDK/android-9_armeabi-v7a/Release/lib"
+
+includepath Wwise/Wwise_v2014.1.1_build_5179/SDK/include
+includepath Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Common
+includepath Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Android
+
+subproject s3eWwise_build

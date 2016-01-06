@@ -1,6 +1,16 @@
 #include "s3eIOHook.h"
 #include "s3eTypes.h"
 #include "s3eFile.h"
+#include "string.h"
+#include "s3eDebug.h"
+
+#if USE_AK_FILE_HELPERS
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+#include "s3eEdk.h"
+#include "s3eEdk_android.h"
+#include <jni.h>
+#endif
 
 #define DEVICE_NAME AKTEXT("S3E Device")
 
@@ -19,12 +29,31 @@ AKRESULT s3eIOHook::Init(const AkDeviceSettings &in_deviceSettings)
 		AKASSERT( !"s3eIOHook I/O hook only works with AK_SCHEDULER_BLOCKING devices" );
 		return AK_Fail;
 	}
-
+	
+#if USE_AK_FILE_HELPERS && defined(S3E_ANDROID)
+    // JNI Code to get access to the asset manager
+    JNIEnv *env = s3eEdkJNIGetEnv();
+	
+    // Find the LoaderActivity class using the environment
+    jclass LoaderActivity = env->FindClass("com/ideaworks3d/marmalade/LoaderActivity");
+    jfieldID fActivity = env->GetStaticFieldID(LoaderActivity, "m_Activity", "Lcom/ideaworks3d/marmalade/LoaderActivity;");
+    jobject m_Activity = env->GetStaticObjectField(LoaderActivity, fActivity);
+	
+    // Call getAssets
+    jmethodID getAssets = env->GetMethodID(LoaderActivity, "getAssets", "()Landroid/content/res/AssetManager;");
+    jobject assetManager = env->CallObjectMethod(m_Activity, getAssets);
+	
+    m_helper.SetAssetManager(AAssetManager_fromJava(env, assetManager));
+#endif
+	
 	// If the Stream Manager's File Location Resolver was not set yet, set this object as the
 	// File Location Resolver (this I/O hook is also able to resolve file location).
 	if ( !AK::StreamMgr::GetFileLocationResolver() )
 		AK::StreamMgr::SetFileLocationResolver( this );
 
+    // Init the file locations
+    m_helper.Init();
+    
 	// Create a device in the Stream Manager, specifying this as the hook.
 	m_deviceID = AK::StreamMgr::CreateDevice( in_deviceSettings, this );
 	if ( m_deviceID != AK_INVALID_DEVICE_ID )
@@ -41,24 +70,68 @@ void s3eIOHook::Term()
 	AK::StreamMgr::DestroyDevice( m_deviceID );
 }
 
+// Returns a file descriptor for a given file name.
 AKRESULT s3eIOHook::Open(const AkOSChar* in_pszFileName, AkOpenMode in_eOpenMode, AkFileSystemFlags *in_pFlags, bool &io_bSyncOpen, AkFileDesc &out_fileDesc)
+{
+    AkOSChar szFullFilePath[AK_MAX_PATH];
+    if ( GetFullFilePath( in_pszFileName, in_pFlags, in_eOpenMode, szFullFilePath ) == AK_Success )
+    {
+        return OpenInternal(szFullFilePath, in_eOpenMode, in_pFlags, io_bSyncOpen, out_fileDesc);
+    }
+
+    return AK_Fail;
+}
+
+// Returns a file descriptor for a given file ID.
+AKRESULT s3eIOHook::Open(AkFileID in_fileID, AkOpenMode in_eOpenMode, AkFileSystemFlags *in_pFlags, bool &io_bSyncOpen, AkFileDesc &out_fileDesc)
+{
+    AkOSChar szFullFilePath[AK_MAX_PATH];
+    if ( GetFullFilePath( in_fileID, in_pFlags, in_eOpenMode, szFullFilePath ) == AK_Success )
+    {
+        return OpenInternal(szFullFilePath, in_eOpenMode, in_pFlags, io_bSyncOpen, out_fileDesc);
+    }
+
+    return AK_Fail;
+}
+
+AKRESULT s3eIOHook::OpenInternal(const AkOSChar* in_pszFileName, AkOpenMode in_eOpenMode, AkFileSystemFlags *in_pFlags, bool &io_bSyncOpen, AkFileDesc &out_fileDesc)
 {
 	io_bSyncOpen = true;
 
+#if USE_AK_FILE_HELPERS
+    switch (in_eOpenMode)
+    {
+        case AK_OpenModeRead:
+            break;
+        default:
+            AKASSERT( !"Invalid open mode" );
+		    return AK_InvalidParameter;
+    }
+	
+	s3eDebugOutputString(in_pszFileName);
+	AKRESULT res = m_helper.OpenBlocking(in_pszFileName, out_fileDesc);
+    if (res == AK_Success)
+    {
+		out_fileDesc.deviceID			= m_deviceID;
+	    return AK_Success;
+    }
+	
+	return res;
+#else
     const char *mode;
     switch ( in_eOpenMode )
 	{
 		case AK_OpenModeRead:
-			mode = "r";
+			mode = "rb";
 			break;
 		case AK_OpenModeWrite:
-			mode = "w";
+			mode = "wb";
 			break;
 		case AK_OpenModeWriteOvrwr:
-			mode = "w+";
+			mode = "w+b";
 			break;
 		case AK_OpenModeReadWrite:
-			mode = "a";
+			mode = "ab";
 			break;
 		default:
 			AKASSERT( !"Invalid open mode" );
@@ -66,7 +139,9 @@ AKRESULT s3eIOHook::Open(const AkOSChar* in_pszFileName, AkOpenMode in_eOpenMode
 			break;
 	}
 
-    s3eFile *file = s3eFileOpen(in_pszFileName, mode);
+    char *filename;
+    CONVERT_OSCHAR_TO_CHAR(in_pszFileName, filename);
+    s3eFile *file = s3eFileOpen(filename, mode);
 
 	if ( file != NULL )
 	{
@@ -81,16 +156,16 @@ AKRESULT s3eIOHook::Open(const AkOSChar* in_pszFileName, AkOpenMode in_eOpenMode
 	}
 
 	return AK_Fail;
-}
-
-// Returns a file descriptor for a given file ID.
-AKRESULT s3eIOHook::Open(AkFileID in_fileID, AkOpenMode in_eOpenMode, AkFileSystemFlags *in_pFlags, bool &io_bSyncOpen, AkFileDesc &out_fileDesc)
-{
-    return AK_NotImplemented;
+#endif
 }
 
 AKRESULT s3eIOHook::Read(AkFileDesc &in_fileDesc, const AkIoHeuristics &, void *out_pBuffer, AkIOTransferInfo &io_transferInfo)
 {
+#if USE_AK_FILE_HELPERS
+	
+	AkUInt32 out_readSize = 0;
+	return m_helper.ReadBlocking(in_fileDesc, out_pBuffer, io_transferInfo.uFilePosition, io_transferInfo.uRequestedSize, out_readSize);
+#else
     int32 position = (int32)io_transferInfo.uFilePosition;
 
 	if( s3eFileSeek((s3eFile *)in_fileDesc.hFile, position, S3E_FILESEEK_SET) == S3E_RESULT_SUCCESS )
@@ -100,10 +175,14 @@ AKRESULT s3eIOHook::Read(AkFileDesc &in_fileDesc, const AkIoHeuristics &, void *
 		   return AK_Success;
 	}
 	return AK_Fail;
+#endif
 }
 
 AKRESULT s3eIOHook::Write(AkFileDesc &in_fileDesc, const AkIoHeuristics &, void *in_pData, AkIOTransferInfo &io_transferInfo)
 {
+#if USE_AK_FILE_HELPERS
+    return AK_Fail;
+#else
 	int32 position = (int32)io_transferInfo.uFilePosition;
 
 	if( s3eFileSeek((s3eFile *)in_fileDesc.hFile, position, S3E_FILESEEK_SET) == S3E_RESULT_SUCCESS )
@@ -116,11 +195,17 @@ AKRESULT s3eIOHook::Write(AkFileDesc &in_fileDesc, const AkIoHeuristics &, void 
 		}
 	}
 	return AK_Fail;
+#endif
 }
 
 AKRESULT s3eIOHook::Close(AkFileDesc & in_fileDesc)
 {
+#if USE_AK_FILE_HELPERS
+    m_helper.CloseFile( in_fileDesc );
+	return AK_Success;
+#else
 	return s3eFileClose( (s3eFile *)in_fileDesc.hFile ) == S3E_RESULT_SUCCESS ? AK_Success : AK_Fail;
+#endif
 }
 
 AkUInt32 s3eIOHook::GetBlockSize(AkFileDesc &)

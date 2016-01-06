@@ -3,26 +3,27 @@
 # be overwritten (unless --force is specified) and is intended to be modified.
 display_name "Extensions/s3eWwise"
 
-includepath Wwise/SDK/include
 includepath source/h
 includepath h
 
 defines
 {
     #Define the verbose channel to be off by default (but controllable by icf)
-    IW_TRACE_CHANNEL_WWISE_VERBOSE=2
+    IW_TRACE_CHANNEL_WWISE_VERBOSE=0
 
     #This macro indicates that this extension is being built
     S3E_EXT_WWISE
+
+    #Enable plugins for Wwise
+    WWISE_AK_VORBIS_PLUGIN
+    WWISE_AK_ROOM_VERB_PLUGIN
+	WWISE_AK_COMPRESSOR_PLUGIN
+	WWISE_AK_PEAK_LIMITER_PLUGIN
+	WWISE_AK_METER_PLUGIN
+	WWISE_AK_SILENCE_PLUGIN
 }
 
-commands
-{
-	"for f in $(find Wwise/SDK/iOS/Debug-iphoneos/lib -type f); do cp $f ${f/.a/_d.a}; done"
-	"mv Wwise/SDK/iOS/Debug-iphoneos/lib/*_d.a Wwise/SDK/iOS"
-	"cp Wwise/SDK/iOS/Release-iphoneos/lib/*.a Wwise/SDK/iOS"
-}
-
+#NOTE: Don't run this because it will overwrite custom files
 #This command re-generates the relevant source files from the s4e when
 #the mkb is run
 #extension
@@ -39,8 +40,21 @@ if {{defined I3D_OS_IPHONE}}
     files
     {
         ["source"]
-        (use_first_found, source/iphone, source/generic)
-        s3eWwise_platform.mm
+        (use_first_found, source/iphone, source/generic, Wwise/Wwise_v2014.1.1_build_5179/SDK-Apple/samples/SoundEngine/POSIX, Wwise/Wwise_v2014.1.1_build_5179/SDK-Apple/samples/SoundEngine/Common)
+        s3eWwise_platform.cpp
+		
+		AkDefaultIOHookBlocking.cpp
+        
+        AkDefaultLowLevelIODispatcher.cpp
+        AkFileLocationBase.cpp
+        AkFilePackage.cpp
+        AkFilePackageLUT.cpp
+    
+        ["h"]
+        AkDefaultLowLevelIODispatcher.h
+        AkFileLocationBase.h
+        AkFilePackage.h
+        AkFilePackageLUT.h
     }
 }
 
@@ -49,10 +63,46 @@ if {{defined I3D_OS_WINDOWS}}
     files
     {
         ["source"]
-        (use_first_found, source/windows, source/generic)
+        (use_first_found, source/windows, source/generic, Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Win32, Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Common)
         s3eWwise_platform.cpp
         #Add any windows-specific files here
+		
+		AkDefaultIOHookBlocking.cpp
+        
+        AkDefaultLowLevelIODispatcher.cpp
+        AkFileLocationBase.cpp
+        AkFilePackage.cpp
+        AkFilePackageLUT.cpp
+    
+        ["h"]
+        AkDefaultLowLevelIODispatcher.h
+        AkFileLocationBase.h
+        AkFilePackage.h
+        AkFilePackageLUT.h
     }
+	
+	librarypath source/lib/win32
+
+	librarys
+	{
+		User32.lib
+		Ole32.lib
+		Ws2_32.lib
+		dxguid.lib
+		dsound.lib
+		AkMemoryMgr.lib
+		AkMusicEngine.lib
+		AkSoundEngine.lib
+		AkStreamMgr.lib
+	}
+
+    if {{defined WWISE_AK_AAC_PLUGIN}}          	library AkAACDecoder.lib
+    if {{defined WWISE_AK_ROOM_VERB_PLUGIN}}    	library AkRoomVerbFX.lib
+    if {{defined WWISE_AK_VORBIS_PLUGIN}}       	library AkVorbisDecoder.lib
+	if {{defined WWISE_AK_COMPRESSOR_PLUGIN}}    	library AkCompressorFX.lib
+	if {{defined WWISE_AK_PEAK_LIMITER_PLUGIN}}    	library AkPeakLimiterFX.lib
+	if {{defined WWISE_AK_METER_PLUGIN}}    		library AkMeterFX.lib
+	if {{defined WWISE_AK_SILENCE_PLUGIN}}    		library AkSilenceSource.lib
 }
 
 if {{defined S3E_ANDROID}}
@@ -60,10 +110,44 @@ if {{defined S3E_ANDROID}}
     files
     {
         ["source"]
-        (use_first_found, source/android, source/generic)
+        (use_first_found, source/android, source/generic, Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Android, Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Common)
         s3eWwise_platform.cpp
         #Add any android-specific files here
+		
+		AkDefaultIOHookBlocking.cpp
+        AkFileHelpers.cpp
+        
+        AkDefaultLowLevelIODispatcher.cpp
+        AkFileLocationBase.cpp
+        AkFilePackage.cpp
+        AkFilePackageLUT.cpp
+    
+        ["h"]
+        AkDefaultLowLevelIODispatcher.h
+        AkFileLocationBase.h
+        AkFilePackage.h
+        AkFilePackageLUT.h
     }
+	
+	librarypath "$NDK_ROOT/platforms/android-9/arch-arm/usr/lib"
+
+	library
+	{
+        libAkMusicEngine.a
+		libAkSoundEngine.a
+		libAkMemoryMgr.a
+		libAkStreamMgr.a
+		OpenSLES
+		android
+	}
+
+    if {{defined WWISE_AK_AAC_PLUGIN}}          	library libAkAACDecoder.a
+    if {{defined WWISE_AK_ROOM_VERB_PLUGIN}}    	library libAkRoomVerbFX.a
+    if {{defined WWISE_AK_VORBIS_PLUGIN}}       	library libAkVorbisDecoder.a
+	if {{defined WWISE_AK_COMPRESSOR_PLUGIN}}    	library libAkCompressorFX.a
+	if {{defined WWISE_AK_PEAK_LIMITER_PLUGIN}}    	library libAkPeakLimiterFX.a
+	if {{defined WWISE_AK_METER_PLUGIN}}    		library libAkMeterFX.a
+	if {{defined WWISE_AK_SILENCE_PLUGIN}}    		library libAkSilenceSource.a
 }
 
 if {{defined I3D_OS_OSX}}
@@ -71,10 +155,41 @@ if {{defined I3D_OS_OSX}}
     files
     {
         ["source"]
-        (use_first_found, source/osx, source/generic)
-        s3eWwise_platform.mm
+        (use_first_found, source/osx, source/generic, Wwise/Wwise_v2014.1.1_build_5179/SDK-Apple/samples/SoundEngine/POSIX, Wwise/Wwise_v2014.1.1_build_5179/SDK-Apple/samples/SoundEngine/Common)
+        s3eWwise_platform.cpp
         #Add any osx-specific files here
+		
+		AkDefaultIOHookBlocking.cpp
+        
+        AkDefaultLowLevelIODispatcher.cpp
+        AkFileLocationBase.cpp
+        AkFilePackage.cpp
+        AkFilePackageLUT.cpp
+    
+        ["h"]
+        AkDefaultLowLevelIODispatcher.h
+        AkFileLocationBase.h
+        AkFilePackage.h
+        AkFilePackageLUT.h
     }
+	
+	librarypath "/System/Library/Frameworks"
+	
+	library
+	{
+	   AKSoundEngine
+	   AkMemoryMgr
+	   AkMusicEngine
+	   AkStreamMgr
+	}
+
+    if {{defined WWISE_AK_AAC_PLUGIN}}          	library AkAACDecoder
+    if {{defined WWISE_AK_ROOM_VERB_PLUGIN}}    	library AkRoomVerbFX
+    if {{defined WWISE_AK_VORBIS_PLUGIN}}       	library AkVorbisDecoder
+	if {{defined WWISE_AK_COMPRESSOR_PLUGIN}}    	library AkCompressorFX
+	if {{defined WWISE_AK_PEAK_LIMITER_PLUGIN}}    	library AkPeakLimiterFX
+	if {{defined WWISE_AK_METER_PLUGIN}}    		library AkMeterFX
+	if {{defined WWISE_AK_SILENCE_PLUGIN}}    		library AkSilenceSource
 }
 
 if {{defined I3D_OS_LINUX and not defined S3E_ANDROID}}
@@ -88,22 +203,94 @@ if {{defined I3D_OS_LINUX and not defined S3E_ANDROID}}
     }
 }
 
+if {{defined I3D_OS_WP8}}
+{
+    files
+    {
+        ["source"]
+        (use_first_found, source/wp8, source/generic, Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Win32, Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Common)
+        s3eWwise_platform.cpp
+        #Add any wp8-specific files here
+        
+        ThreadEmulation.cpp
+        AkDefaultIOHookBlocking.cpp
+        
+        AkDefaultLowLevelIODispatcher.cpp
+        AkFileLocationBase.cpp
+        AkFilePackage.cpp
+        AkFilePackageLUT.cpp
+    
+        ["h"]
+        AkDefaultLowLevelIODispatcher.h
+        AkFileLocationBase.h
+        AkFilePackage.h
+        AkFilePackageLUT.h
+    }
+    
+    librarys
+	{
+        ws2_32.lib
+        xaudio2.lib
+		AkMemoryMgr.lib
+		AkMusicEngine.lib
+		AkSoundEngine.lib
+		AkStreamMgr.lib
+	}
+
+    if {{defined WWISE_AK_AAC_PLUGIN}}          	library AkAACDecoder.lib
+    if {{defined WWISE_AK_ROOM_VERB_PLUGIN}}    	library AkRoomVerbFX.lib
+    if {{defined WWISE_AK_VORBIS_PLUGIN}}       	library AkVorbisDecoder.lib
+	if {{defined WWISE_AK_COMPRESSOR_PLUGIN}}    	library AkCompressorFX.lib
+	if {{defined WWISE_AK_PEAK_LIMITER_PLUGIN}}    	library AkPeakLimiterFX.lib
+	if {{defined WWISE_AK_METER_PLUGIN}}    		library AkMeterFX.lib
+	if {{defined WWISE_AK_SILENCE_PLUGIN}}    		library AkSilenceSource.lib
+}
+
+if {{defined I3D_OS_WS8}}
+{
+    files
+    {
+        ["h"]
+        (source/ws8)
+        s3eWwise_shim.h
+        ["source"]
+        (use_first_found, source/ws8, source/generic)
+        s3eWwise_platform.cpp
+        s3eWwise_shim.cpp
+        #Add any ws8-specific files here
+    }
+}
+
+if {{defined I3D_OS_WS81}}
+{
+    files
+    {
+        ["h"]
+        (source/ws81)
+        s3eWwise_shim.h
+        ["source"]
+        (use_first_found, source/ws81, source/generic)
+        s3eWwise_platform.cpp
+        s3eWwise_shim.cpp
+        #Add any ws81-specific files here
+    }
+}
+
 files
 {
-	AkFilePackage.cpp
-	AkFilePackageLUT.cpp
-	s3eIOHook.cpp
     # Add any platform-independent files here
     # Note that if the file exists in the platform-specific directory
     # it will be taken from there instead of 'generic'
     s3eWwise_register.cpp
     s3eWwise.cpp
+	s3eIOHook.cpp
 
     ["h"]
     (source/h)
     s3eWwise_internal.h
     s3eWwise_autodefs.h
-
+    s3eIOHook.h
+	
     ["docs"]
     (interface)
     s3eWwise.defines.txt

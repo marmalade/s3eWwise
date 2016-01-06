@@ -1,0 +1,28 @@
+#!/usr/bin/env mkb
+# Builder mkb file for the s3eWwise extension on wp8
+platform WP8LOADER
+
+commands
+{
+	"setup_libs.py"
+}
+
+options
+{
+    buildenv=vc11
+    buildenv-toolset=wp8
+    dll
+    #arm
+    output-name="lib/wp8/$(PlatformTarget)/$(Configuration)/s3eWwiseExtension.dll"
+}
+
+define S3E_BUILD_EXT
+define AK_OPTIMIZED
+
+librarypath "Wwise/Wwise_v2014.1.1_build_5179/SDK/WinPhone_ARM_vc110/Debug/lib"
+
+includepath Wwise/Wwise_v2014.1.1_build_5179/SDK/include
+includepath Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Common
+includepath Wwise/Wwise_v2014.1.1_build_5179/SDK/samples/SoundEngine/Win32
+
+subproject s3eWwise_build

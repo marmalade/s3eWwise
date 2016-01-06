@@ -1,0 +1,41 @@
+#!/usr/bin/env mkb
+
+# Automatically build the Wwise/SDK/samples/IntegrationDemo project
+# Place the output in the Wwise/SDK/examples/data/Audio folder
+commands
+{
+	"generate_example_banks.py"
+}
+
+files
+{
+    s3eWwiseExample.cpp
+
+	[data/Audio]
+	(data/Audio)
+	Wwise_IDs.h
+
+}
+
+assets
+{
+	(data)
+	Audio
+    
+    (data-ram)
+    shader_bin_wp8
+}
+
+subprojects
+{
+    s3eWwise
+	iwgx
+}
+
+#### AUTO GENERATED deployment settings from DeployTool.exe. Do not edit below this line ####
+deployments
+{
+	["Default"]
+	android-manifest='AndroidManifest.xml'
+	app-icf='data/app.icf'
+}

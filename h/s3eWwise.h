@@ -197,7 +197,7 @@ typedef struct s3eWwiseStreamMgr s3eWwiseStreamMgr;
  * AK::SoundEngine
  */
 typedef void (*s3eWwiseAssertHook)(const char *in_pszExpression, const char *in_pszFileName, int in_lineNumber);
-
+ 
 typedef struct s3eWwiseInitSettings
 {
 	s3eWwiseAssertHook pfnAssertHook;
@@ -241,7 +241,6 @@ typedef struct s3eWwisePorts
 	uint16 uDiscoveryBroadcast;
 	uint16 uCommand;
 	uint16 uNotification;
-	uint16 uControl;
 } s3eWwisePorts;
 
 typedef struct s3eWwiseCommSettings
@@ -278,6 +277,8 @@ void s3eWwiseStreamMgrDestroy(s3eWwiseStreamMgr* streamMgr);
 
 void s3eWwiseStreamMgrGetDefaultSettings(s3eWwiseStreamMgrSettings* out_settings);
 
+s3eWwiseResult s3eWwiseStreamMgrSetCurrentLanguage(const char* in_pszLanguageName);
+
 /**
  * AK::SoundEngine
  */
@@ -293,25 +294,25 @@ void s3eWwiseSoundEngineTerm();
 
 s3eWwiseResult s3eWwiseSoundEngineRenderAudio();
 
-s3eWwisePlayingID s3eWwiseSoundEnginePostEventNamed(const char* in_pszEventName, s3eWwiseGameObjectID in_gameObjectID, uint32 flags = 0);
+s3eWwisePlayingID s3eWwiseSoundEnginePostEventNamed(const char* in_pszEventName, s3eWwiseGameObjectID in_gameObjectID, uint32 flags S3E_DEFAULT(0));
 
-s3eWwisePlayingID s3eWwiseSoundEnginePostEventWithID(s3eWwiseUniqueID in_eventID, s3eWwiseGameObjectID in_gameObjectID, uint32 flags = 0);
+s3eWwisePlayingID s3eWwiseSoundEnginePostEventWithID(s3eWwiseUniqueID in_eventID, s3eWwiseGameObjectID in_gameObjectID, uint32 flags S3E_DEFAULT(0));
 
-void s3eWwiseSoundEngineStopAll(s3eWwiseGameObjectID in_gameObjectID = S3E_WWISE_INVALID_GAME_OBJECT);
+void s3eWwiseSoundEngineStopAll(s3eWwiseGameObjectID in_gameObjectID S3E_DEFAULT(S3E_WWISE_INVALID_GAME_OBJECT));
 
-void s3eWwiseSoundEngineStopPlayingID(s3eWwisePlayingID in_playingID, s3eWwiseTimeMs in_uTransitionDuration = 0, s3eWwiseCurveInterpolation in_eFadeCurve = s3eWwiseCurveInterpolation_Linear);
+void s3eWwiseSoundEngineStopPlayingID(s3eWwisePlayingID in_playingID, s3eWwiseTimeMs in_uTransitionDuration S3E_DEFAULT(0), s3eWwiseCurveInterpolation in_eFadeCurve S3E_DEFAULT(s3eWwiseCurveInterpolation_Linear));
 
 s3eWwiseResult s3eWwiseSoundEngineSetActiveListeners(s3eWwiseGameObjectID in_GameObjectID, uint32 in_uListenerMask);
 
-s3eWwiseResult s3eWwiseSoundEngineSetListenerPosition(const s3eWwiseListenerPosition* in_Position, uint32 in_uIndex = 0);
+s3eWwiseResult s3eWwiseSoundEngineSetListenerPosition(const s3eWwiseListenerPosition* in_Position, uint32 in_uIndex S3E_DEFAULT(0));
 
-s3eWwiseResult s3eWwiseSoundEngineSetRTPCValueWithID(s3eWwiseRtpcID in_rtpcID, s3eWwiseRtpcValue in_value, s3eWwiseGameObjectID in_gameObjectID = S3E_WWISE_INVALID_GAME_OBJECT, s3eWwiseTimeMs in_uValueChangeDuration = 0, s3eWwiseCurveInterpolation in_eFadeCurve = s3eWwiseCurveInterpolation_Linear);
+s3eWwiseResult s3eWwiseSoundEngineSetRTPCValueWithID(s3eWwiseRtpcID in_rtpcID, s3eWwiseRtpcValue in_value, s3eWwiseGameObjectID in_gameObjectID S3E_DEFAULT(S3E_WWISE_INVALID_GAME_OBJECT), s3eWwiseTimeMs in_uValueChangeDuration S3E_DEFAULT(0), s3eWwiseCurveInterpolation in_eFadeCurve S3E_DEFAULT(s3eWwiseCurveInterpolation_Linear));
 
-s3eWwiseResult s3eWwiseSoundEngineSetRTPCValueNamed(const char* in_pszRtpcName, s3eWwiseRtpcValue in_value, s3eWwiseGameObjectID in_gameObjectID = S3E_WWISE_INVALID_GAME_OBJECT, s3eWwiseTimeMs in_uValueChangeDuration = 0, s3eWwiseCurveInterpolation in_eFadeCurve = s3eWwiseCurveInterpolation_Linear);
+s3eWwiseResult s3eWwiseSoundEngineSetRTPCValueNamed(const char* in_pszRtpcName, s3eWwiseRtpcValue in_value, s3eWwiseGameObjectID in_gameObjectID S3E_DEFAULT(S3E_WWISE_INVALID_GAME_OBJECT), s3eWwiseTimeMs in_uValueChangeDuration S3E_DEFAULT(0), s3eWwiseCurveInterpolation in_eFadeCurve S3E_DEFAULT(s3eWwiseCurveInterpolation_Linear));
 
-s3eWwiseResult s3eWwiseSoundEngineResetRTPCValueWithID(s3eWwiseRtpcID in_rtpcID, s3eWwiseGameObjectID in_gameObjectID = S3E_WWISE_INVALID_GAME_OBJECT, s3eWwiseTimeMs in_uValueChangeDuration = 0, s3eWwiseCurveInterpolation in_eFadeCurve = s3eWwiseCurveInterpolation_Linear);
+s3eWwiseResult s3eWwiseSoundEngineResetRTPCValueWithID(s3eWwiseRtpcID in_rtpcID, s3eWwiseGameObjectID in_gameObjectID S3E_DEFAULT(S3E_WWISE_INVALID_GAME_OBJECT), s3eWwiseTimeMs in_uValueChangeDuration S3E_DEFAULT(0), s3eWwiseCurveInterpolation in_eFadeCurve S3E_DEFAULT(s3eWwiseCurveInterpolation_Linear));
 
-s3eWwiseResult s3eWwiseSoundEngineResetRTPCValueNamed(const char* in_pszRtpcName, s3eWwiseGameObjectID in_gameObjectID = S3E_WWISE_INVALID_GAME_OBJECT, s3eWwiseTimeMs in_uValueChangeDuration = 0, s3eWwiseCurveInterpolation in_eFadeCurve = s3eWwiseCurveInterpolation_Linear);
+s3eWwiseResult s3eWwiseSoundEngineResetRTPCValueNamed(const char* in_pszRtpcName, s3eWwiseGameObjectID in_gameObjectID S3E_DEFAULT(S3E_WWISE_INVALID_GAME_OBJECT), s3eWwiseTimeMs in_uValueChangeDuration S3E_DEFAULT(0), s3eWwiseCurveInterpolation in_eFadeCurve S3E_DEFAULT(s3eWwiseCurveInterpolation_Linear));
 
 s3eWwiseResult s3eWwiseSoundEngineSetSwitchWithID(s3eWwiseSwitchGroupID in_switchGroup, s3eWwiseSwitchStateID in_switchState, s3eWwiseGameObjectID in_gameObjectID);
 
@@ -333,7 +334,7 @@ s3eWwiseResult s3eWwiseSoundEngineUnregisterGameObj(s3eWwiseGameObjectID in_game
 
 s3eWwiseResult s3eWwiseSoundEngineUnregisterAllGameObj();
 
-s3eWwiseResult s3eWwiseSoundEngineSetPosition(s3eWwiseGameObjectID in_gameObjectID, const s3eWwiseSoundPosition* in_Position, uint32 in_uListenerIndex = S3E_WWISE_INVALID_LISTENER_INDEX);
+s3eWwiseResult s3eWwiseSoundEngineSetPosition(s3eWwiseGameObjectID in_gameObjectID, const s3eWwiseSoundPosition* in_Position);
 
 s3eWwiseResult s3eWwiseSoundEngineClearBanks();
 
@@ -341,9 +342,9 @@ s3eWwiseResult s3eWwiseSoundEngineLoadBankNamed(const char* in_pszString, s3eWwi
 
 s3eWwiseResult s3eWwiseSoundEngineLoadBankWithID(s3eWwiseBankID in_bankID, s3eWwiseMemPoolId in_memPoolId);
 
-s3eWwiseResult s3eWwiseSoundEngineUnloadBankNamed(const char* in_pszString, s3eWwiseMemPoolId* out_memPoolId = NULL);
+s3eWwiseResult s3eWwiseSoundEngineUnloadBankNamed(const char* in_pszString, s3eWwiseMemPoolId* out_memPoolId S3E_DEFAULT(NULL));
 
-s3eWwiseResult s3eWwiseSoundEngineUnloadBankWithID(s3eWwiseBankID in_bankID, s3eWwiseMemPoolId* out_memPoolId = NULL);
+s3eWwiseResult s3eWwiseSoundEngineUnloadBankWithID(s3eWwiseBankID in_bankID, s3eWwiseMemPoolId* out_memPoolId S3E_DEFAULT(NULL));
 
 /**
  * AK::MusicEngine
@@ -357,11 +358,20 @@ void s3eWwiseMusicEngineTerm();
 /**
  * AK::Comm
  */
-s3eWwiseResult s3eWwiseCommInit(s3eWwiseCommSettings *in_settings);
+s3eWwiseResult s3eWwiseCommInit(s3eWwiseCommSettings* in_settings);
 
-void s3eWwiseCommGetDefaultInitSettings(s3eWwiseCommSettings *out_settings);
+void s3eWwiseCommGetDefaultInitSettings(s3eWwiseCommSettings* out_settings);
 
 void s3eWwiseCommTerm();
+
+/**
+ * Low-Level IO
+ */
+s3eWwiseResult s3eWwiseLowLevelIOSetBasePath(const char* in_pszBasePath);
+
+s3eWwiseResult s3eWwiseLowLevelIOSetBankPath(const char* in_pszBankPath);
+
+s3eWwiseResult s3eWwiseLowLevelIOSetAudioSrcPath(const char* in_pszAudioSrcPath);
 
 S3E_END_C_DECL
 
